@@ -1,0 +1,27 @@
+# On ignore les dossiers de données lourds
+data/
+raw_data/
+processed_data/
+
+# On ignore l'historique Git (peut être énorme)
+.git/
+
+# On ignore les environnements virtuels Python (Docker installe le sien)
+venv/
+env/
+.venv/
+
+# On ignore les caches Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# On ignore les fichiers temporaires ou de config locale
+.env
+.idea/
+.vscode/
+.DS_Store
+
+# Optionnel : Si votre modèle est TROP gros (>500Mo) et que vous utilisez un volume,
+# vous pouvez le décommenter ici. Mais pour le rendu jury, gardez-le souvent inclus.
+# model/
