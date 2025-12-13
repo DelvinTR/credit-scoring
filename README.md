@@ -4,7 +4,7 @@
 
 ## Installation
 
-## Download the data
+### Download the data
 
 In order to download the dataset, you can either download directly the data from the Kaggle website or use the Kaggle API.
 
@@ -14,7 +14,7 @@ In order to download the dataset, you can either download directly the data from
 kaggle competitions download -c home-credit-default-risk
 ```
 
-## Python Setup
+### Python Setup
 
 1. Create the virtual environment
 ```bash 
