@@ -17,6 +17,7 @@ st.set_page_config(page_title="Dashboard Scoring Crédit", layout="wide")
 # URL de l'API (Backend)
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")
 
+
 # =========================================================
 # 1. CHARGEMENT DES DONNÉES ET DU MODÈLE (CACHE)
 # =========================================================
@@ -26,7 +27,7 @@ def load_data():
     try:
         df = pd.read_csv("data/processed/train_final.csv")
         # Nettoyage des colonnes (pour correspondre au modèle)
-        df = df.rename(columns=lambda x: re.sub('[^A-Za-z0-9_]+', '', x))
+        df = df.rename(columns=lambda x: re.sub("[^A-Za-z0-9_]+", "", x))
 
         # On ne garde que les 2000 premiers pour que le dashboard soit rapide
         if len(df) > 2000:
@@ -61,7 +62,7 @@ st.sidebar.markdown("---")
 
 if df is not None:
     # Liste des IDs disponibles
-    id_list = df['SK_ID_CURR'].unique()
+    id_list = df["SK_ID_CURR"].unique()
     selected_id = st.sidebar.selectbox("Numéro de dossier (ID Client)", id_list)
 
     # Bouton d'action
@@ -75,10 +76,14 @@ st.title("Dashboard d'Octroi de Crédit")
 if df is not None and launch_analysis:
 
     # Récupération des données du client choisi
-    client_row = df[df['SK_ID_CURR'] == selected_id].iloc[0]
+    client_row = df[df["SK_ID_CURR"] == selected_id].iloc[0]
 
     # Préparation pour l'API (Nettoyage)
-    features = client_row.drop(['SK_ID_CURR', 'TARGET'], errors='ignore').to_dict()
+    features = (
+        client_row.drop(["SK_ID_CURR", "TARGET"], errors="ignore")
+        .replace([np.inf, -np.inf, np.nan], None)
+        .to_dict()
+    )
 
     # -----------------------------------------------------
     # A. APPEL API (LE SCORE)
@@ -92,9 +97,9 @@ if df is not None and launch_analysis:
                 result = response.json()
 
                 # Récupération des résultats
-                score = result['probability']
-                threshold = result['threshold']
-                decision = result['decision']
+                score = result["probability"]
+                threshold = result["threshold"]
+                decision = result["decision"]
 
                 # --- AFFICHAGE JAUGE ET DÉCISION ---
                 col1, col2 = st.columns([1, 2])
@@ -105,35 +110,46 @@ if df is not None and launch_analysis:
                     st.metric(label="Décision Recommandée", value=decision)
 
                     # Jauge Plotly
-                    fig_gauge = go.Figure(go.Indicator(
-                        mode="gauge+number",
-                        value=score,
-                        domain={'x': [0, 1], 'y': [0, 1]},
-                        title={'text': "Probabilité de Défaut"},
-                        gauge={
-                            'axis': {'range': [0, 1]},
-                            'bar': {'color': color_gauge},
-                            'threshold': {
-                                'line': {'color': "black", 'width': 4},
-                                'thickness': 0.75,
-                                'value': threshold}
-                        }
-                    ))
+                    fig_gauge = go.Figure(
+                        go.Indicator(
+                            mode="gauge+number",
+                            value=score,
+                            domain={"x": [0, 1], "y": [0, 1]},
+                            title={"text": "Probabilité de Défaut"},
+                            gauge={
+                                "axis": {"range": [0, 1]},
+                                "bar": {"color": color_gauge},
+                                "threshold": {
+                                    "line": {"color": "black", "width": 4},
+                                    "thickness": 0.75,
+                                    "value": threshold,
+                                },
+                            },
+                        )
+                    )
                     fig_gauge.update_layout(height=300)
                     st.plotly_chart(fig_gauge, use_container_width=True)
 
                 with col2:
                     st.subheader("Informations Clés")
                     st.write(f"**ID Client :** {selected_id}")
-                    st.write(f"**Revenu Annuel :** {client_row.get('AMT_INCOME_TOTAL', 0):,.0f} $")
-                    st.write(f"**Montant du Crédit :** {client_row.get('AMT_CREDIT', 0):,.0f} $")
-                    st.write(f"**Ancienneté Emploi :** {client_row.get('DAYS_EMPLOYED', 0):.0f} jours")
+                    st.write(
+                        f"**Revenu Annuel :** {client_row.get('AMT_INCOME_TOTAL', 0):,.0f} $"
+                    )
+                    st.write(
+                        f"**Montant du Crédit :** {client_row.get('AMT_CREDIT', 0):,.0f} $"
+                    )
+                    st.write(
+                        f"**Ancienneté Emploi :** {client_row.get('DAYS_EMPLOYED', 0):.0f} jours"
+                    )
 
             else:
                 st.error(f"Erreur API : {response.status_code}")
 
         except Exception as e:
-            st.error(f"Impossible de contacter l'API. Vérifiez qu'elle est lancée. ({e})")
+            st.error(
+                f"Impossible de contacter l'API. Vérifiez qu'elle est lancée. ({e})"
+            )
 
     # -----------------------------------------------------
     # B. JUSTIFICATION (SHAP LOCAL)
@@ -167,14 +183,16 @@ if df is not None and launch_analysis:
                     base_val = base_val[0]
 
             # 4. Création du graphique Waterfall
-            st.write("Ce graphique montre les critères qui ont le plus influencé la note de ce client précis.")
+            st.write(
+                "Ce graphique montre les critères qui ont le plus influencé la note de ce client précis."
+            )
 
             # Création de l'objet Explanation
             exp = shap.Explanation(
                 values=vals[0],  # Valeurs pour ce client
                 base_values=base_val,  # Valeur moyenne
                 data=X_client.iloc[0],  # Données brutes
-                feature_names=X_client.columns
+                feature_names=X_client.columns,
             )
 
             # Affichage Matplotlib dans Streamlit
@@ -183,12 +201,16 @@ if df is not None and launch_analysis:
             st.pyplot(fig_shap)
 
             # Petit texte explicatif
-            st.info("""
+            st.info(
+                """
             **Comment lire ce graphique ?**
             - **Rouge** : Critères qui augmentent le risque (Points négatifs).
             - **Bleu** : Critères qui diminuent le risque (Points positifs).
             - La taille de la barre indique l'importance du critère.
-            """)
+            """
+            )
 
 else:
-    st.info("Veuillez sélectionner un ID client dans la barre latérale et cliquer sur 'Lancer l'analyse'.")
+    st.info(
+        "Veuillez sélectionner un ID client dans la barre latérale et cliquer sur 'Lancer l'analyse'."
+    )
