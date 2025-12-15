@@ -2,6 +2,10 @@
 
 > Dataset : https://www.kaggle.com/competitions/home-credit-default-risk/data
 
+## Introduction
+
+The repository features a credit scoring project using the Home Credit Default Risk dataset from Kaggle. The goal of this project is to predict the probability of a client defaulting on their loan based on various features provided in the dataset.
+
 ## Installation
 
 ### Download the data
@@ -44,4 +48,13 @@ Now to run the project with the dashboard, you just have the type the following 
 docker compose up
 ```
 
-> You can access the dashboard at http://localhost:8501/.
+> You can access the dashboard at http://localhost:8501/. Or call it with the API at http://localhost:8000/predict.
+
+You can call the API with the following command : 
+```bash
+curl http://127.0.0.1:8000/predict \
+   -H "Accept: application/json" \
+   -X "POST" \
+   --request POST \
+    --data '<FEATURES>'
+```
